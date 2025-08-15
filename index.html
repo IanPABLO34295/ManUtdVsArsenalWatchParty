@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Cute Football Puzzle — United × Arsenal</title>
+<meta name="theme-color" content="#e8002a"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;800&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+/* ---------- Base & Theme ---------- */
+*{box-sizing:border-box} html,body{height:100%}
+:root{
+  --ink:#0d1024; --ink-soft:#0d1024cc; --bg:#fff9fe;
+  --accent:#e8002a; --accent-2:#ffcc00; --accent-3:#1a73e8; --accent-4:#8e2de2;
+  --ring:linear-gradient(135deg,var(--accent),var(--accent-2),var(--accent-3),var(--accent-4),var(--accent));
+  --shadow:0 16px 40px rgba(0,0,0,.18);
+  --radius-xl:26px; --radius-lg:18px; --radius-md:14px;
+  --ars-logo-url:url("assets/arsenal.png"); --mu-logo-url:url("assets/manutd.png");
+  --poster-url:none; /* optional page background */
+}
+body{margin:0;font-family:"Baloo 2","Nunito",system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;color:var(--ink);background:var(--bg);overflow-x:hidden}
+body.theme-mu{--accent:#e8002a;--accent-2:#ffcc00}
+body.theme-ars{--accent:#ef0107;--accent-2:#063672}
+
+/* ---------- Backgrounds ---------- */
+.bg-poster{position:fixed;inset:0;z-index:-3;background-image:var(--poster-url);background-size:cover;background-position:center;filter:saturate(1.05) brightness(.98)}
+.bg-vignette{position:fixed;inset:0;z-index:-2;background:radial-gradient(110% 110% at 50% -10%,#ffffffc8 0%,#ffffff00 45%),linear-gradient(180deg,#ffffffcc 0%,#ffffff66 28%,#ffffff00 60%)}
+.bg-gradient{position:fixed;inset:0;z-index:-2;background:conic-gradient(from 180deg at 50% 50%,var(--accent),var(--accent-2),var(--accent-3),var(--accent-4),var(--accent));filter:blur(90px) saturate(1.15);opacity:.2;animation:spin 22s linear infinite}
+@keyframes spin{to{transform:rotate(1turn)}}
+.bg-logos{position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:var(--mu-logo-url),var(--ars-logo-url);background-repeat:repeat,repeat;background-size:160px auto,160px auto;background-position:0 0,80px 80px;opacity:.08;mix-blend-mode:multiply}
+
+/* ---------- Confetti & Toast ---------- */
+#confetti{pointer-events:none;position:fixed;inset:0;overflow:hidden;z-index:40}
+.confetti{position:absolute;top:-10vh;width:10px;height:14px;background:var(--ring);border-radius:2px;filter:saturate(1.2);animation:fall 2.8s ease-in forwards,wobble 1.2s ease-in-out infinite;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg);opacity:.95}}
+@keyframes wobble{0%,100%{translate:0}50%{translate:6px}}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:60;background:#111827;color:#fff;padding:10px 14px;border-radius:999px;font-weight:800;box-shadow:0 8px 20px rgba(0,0,0,.3)}
+.toast.hidden{display:none}
+
+/* ---------- Layout ---------- */
+.app{max-width:980px;margin:24px auto 72px;padding:0 16px}
+.header{text-align:center;margin-bottom:10px}
+.title{margin:10px 0 0;line-height:1.05;letter-spacing:.3px;font-size:clamp(28px,4.8vw,46px)}
+.title .club{background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800;padding-right:3px}
+.title .duo{font-weight:900}
+.subtitle{margin:6px 0 0;color:var(--ink-soft);font-size:clamp(14px,2.2vw,16px)}
+
+.actions{display:flex;gap:10px;justify-content:center;margin:14px 0 8px}
+.btn{padding:10px 14px;border-radius:var(--radius-md);border:none;background:linear-gradient(135deg,#ffffff,#f7f9ff);font-weight:900;letter-spacing:.2px;cursor:pointer;box-shadow:0 8px 20px rgba(0,0,0,.12);transition:transform .12s ease,filter .12s ease}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.03)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+
+.stats{margin:8px 0 16px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.pill{background:#ffffffd8;border-radius:999px;padding:8px 14px;font-weight:900;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+
+/* ---------- Board & Tiles ---------- */
+.board{position:relative;width:min(92vmin,640px);min-width:280px;aspect-ratio:1;margin:0 auto;border-radius:var(--radius-xl);background:radial-gradient(120% 120% at 50% 50%,#ffffffee,#f4f7ff);box-shadow:inset 0 0 0 2px #0000000f,var(--shadow);overflow:hidden;padding:0}
+.tile{position:absolute;border-radius:20px;user-select:none;cursor:pointer;background-repeat:no-repeat;background-origin:border-box;box-shadow:0 10px 24px rgba(0,0,0,.18),inset 0 0 0 2px #ffffff;transition:transform .16s cubic-bezier(.2,.7,.2,1.1);display:grid;place-items:end;overflow:hidden}
+.tile::before{content:"";position:absolute;inset:-2px;border-radius:22px;padding:2px;background:var(--ring);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.badge{position:absolute;top:8px;left:8px;font-weight:900;font-size:clamp(10px,2.6vmin,16px);color:var(--ink);background:#ffffffde;padding:4px 7px;border-radius:999px;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+.footer{margin-top:12px;text-align:center;color:var(--ink-soft)}
+:focus-visible{outline:3px solid var(--accent-3);outline-offset:2px}
+
+/* ---------- Floating Settings FAB ---------- */
+.fab{position:fixed;right:18px;bottom:18px;z-index:70;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:#fff;font-size:26px;font-weight:900;box-shadow:0 12px 28px rgba(0,0,0,.22);cursor:pointer;user-select:none}
+.fab::after{/* glow ring */content:"";position:absolute;inset:-3px;border-radius:inherit;padding:3px;background:var(--ring);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.9;pointer-events:none}
+.fab:hover{transform:translateY(-2px)}
+.fab[data-tip]:hover::before{content:attr(data-tip);position:absolute;bottom:70px;right:0;background:#111827;color:#fff;font-size:12px;padding:6px 8px;border-radius:8px;white-space:nowrap;box-shadow:0 10px 20px rgba(0,0,0,.25)}
+
+/* ---------- Modals ---------- */
+.modal{position:fixed;inset:0;display:grid;place-items:center;background:rgba(8,10,20,.48);backdrop-filter:blur(6px);z-index:60}
+.modal.hidden{display:none}
+.modal-card{width:min(92vw,760px);background:linear-gradient(135deg,#fff,#f8faff);padding:18px;border-radius:var(--radius-lg);box-shadow:var(--shadow)}
+.modal-title{margin:6px 0 12px;font-size:clamp(22px,3.6vw,32px);text-align:center}
+.modal-actions{display:flex;justify-content:center;gap:10px;margin-top:12px}
+#previewImage{max-width:80vmin;max-height:70vh;border-radius:14px;box-shadow:0 8px 20px rgba(0,0,0,.18)}
+.howto-list{max-width:560px;margin:0 auto;line-height:1.5;font-weight:700}
+.modal-title.win{background:linear-gradient(90deg,var(--accent),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* ---------- Settings content ---------- */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:720px){.settings-grid{grid-template-columns:1fr}}
+.set-card{background:#fff;border-radius:14px;padding:12px;box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.set-card h3{margin:0 0 8px 0;font-size:18px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex;background:#fff;border-radius:999px;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.seg button{border:none;padding:8px 12px;font-weight:900;cursor:pointer;background:transparent;border-radius:999px}
+.seg button.active{color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+.toggle{display:inline-flex;align-items:center;gap:8px}
+.toggle input{appearance:none;width:44px;height:26px;border-radius:999px;background:#e7e9f5;position:relative;box-shadow:inset 0 2px 6px rgba(0,0,0,.08);transition:.2s}
+.toggle input::after{content:"";position:absolute;left:4px;top:4px;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#fff,#f3f6ff);box-shadow:0 2px 8px rgba(0,0,0,.2);transition:.2s}
+.toggle input:checked{background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+.toggle input:checked::after{transform:translateX(18px)}
+select, input[type="range"]{accent-color:var(--accent)}
+select{padding:10px 12px;border-radius:var(--radius-md);border:2px solid #00000014;background:#fff;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.06)}
+.file-label{display:inline-flex;align-items:center;gap:8px;border:2px dashed #00000024;padding:10px 12px;border-radius:var(--radius-md);background:#ffffffc4;cursor:pointer}
+.file-label input{display:none}
+.small{color:#555;font-size:12px}
+.tracklist{max-height:120px;overflow:auto;border:1px dashed #00000022;border-radius:10px;padding:8px;background:#fafbff}
+.tracklist div{font-size:13px;font-weight:800;margin:2px 0}
+</style>
+</head>
+
+<body class="theme-mu">
+  <!-- Background layers -->
+  <div class="bg-poster"></div>
+  <div class="bg-vignette"></div>
+  <div class="bg-gradient"></div>
+  <div class="bg-logos"></div>
+
+  <!-- Effects & toast -->
+  <div id="confetti"></div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <main class="app">
+    <header class="header">
+      <h1 class="title"><span class="club">Cute Sliding Puzzle</span> <span class="duo">United × Arsenal</span></h1>
+      <p class="subtitle">All options live under the ⚙️ settings button. Press <strong>S</strong> to open.</p>
+    </header>
+
+    <div class="actions">
+      <button id="shuffle" class="btn primary">Shuffle & Play</button>
+      <button id="preview" class="btn">Preview</button>
+      <button id="howto" class="btn">How to Play</button>
+    </div>
+
+    <section class="stats">
+      <div class="pill">⏱️ Time: <span id="time">00:00</span></div>
+      <div class="pill">🧩 Moves: <span id="moves">0</span></div>
+      <div class="pill">🏅 Best: <span id="best">—</span></div>
+      <div class="pill">🎵 Now Playing: <span id="nowPlaying">—</span></div>
+    </section>
+
+    <div id="board" class="board" aria-label="Sliding puzzle board"></div>
+
+    <footer class="footer">
+      <p>Use <strong>arrow keys/WASD</strong> or tap tiles. Press <strong>Space</strong> for a quick peek. Press <strong>S</strong> for settings.</p>
+    </footer>
+  </main>
+
+  <!-- Floating Settings Button -->
+  <div id="fab" class="fab" data-tip="Settings (S)">⚙️</div>
+
+  <!-- SETTINGS MODAL -->
+  <div id="settingsModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Settings">
+    <div class="modal-card">
+      <h2 class="modal-title">Settings</h2>
+      <div class="settings-grid">
+        <!-- Theme -->
+        <div class="set-card">
+          <h3>Theme</h3>
+          <div class="row">
+            <div class="seg">
+              <button id="themeMU" class="active" title="Manchester United">MU</button>
+              <button id="themeARS" title="Arsenal">ARS</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gameplay -->
+        <div class="set-card">
+          <h3>Gameplay</h3>
+          <div class="row">
+            <label>Grid</label>
+            <select id="size">
+              <option value="3">3 × 3</option>
+              <option value="4" selected>4 × 4</option>
+              <option value="5">5 × 5</option>
+            </select>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <label class="toggle"><input id="numbers" type="checkbox" checked><span>Numbers</span></label>
+            <label class="toggle"><input id="sound" type="checkbox" checked><span>Sound</span></label>
+            <label class="toggle"><input id="haptics" type="checkbox" checked><span>Haptics</span></label>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button id="resetBest" class="btn">Reset Best Scores</button>
+          </div>
+        </div>
+
+        <!-- Music -->
+        <div class="set-card">
+          <h3>Music</h3>
+          <div class="row">
+            <button id="musicToggle" class="btn">Play ▷</button>
+            <button id="musicPrev" class="btn">⟨⟨</button>
+            <button id="musicNext" class="btn">⟩⟩</button>
+            <label class="toggle" title="Loop current track"><input id="musicLoop" type="checkbox"><span>Loop</span></label>
+          </div>
+          <div class="row" style="margin-top:10px">
+            Volume <input id="musicVol" type="range" min="0" max="1" step="0.01" value="0.5" style="width:180px">
+          </div>
+          <div class="row" style="margin-top:10px">
+            <label class="file-label"><input id="musicInput" type="file" accept="audio/*" multiple>Music files</label>
+            <span class="small">Add your .mpeg/.mp3 files.</span>
+          </div>
+          <div id="tracklist" class="tracklist" aria-live="polite"></div>
+        </div>
+
+        <!-- Images -->
+        <div class="set-card">
+          <h3>Images</h3>
+          <div class="row">
+            <label class="file-label"><input id="fileInput" type="file" accept="image/*">Puzzle image</label>
+            <label class="file-label"><input id="bgInput" type="file" accept="image/*">Background image</label>
+          </div>
+          <div class="small" style="margin-top:8px">Defaults: <code>assets/logo.png</code> (puzzle), <code>assets/game-bg.jpg|png|jpeg</code> (background). MU/Arsenal tiles auto-animate colors in the page background.</div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="closeSettings" class="btn primary">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- OTHER MODALS -->
+  <div id="previewModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Image preview">
+    <div class="modal-card">
+      <h2 class="modal-title">Full Image</h2>
+      <img id="previewImage" alt="Full image preview"/>
+      <div class="modal-actions"><button id="closePreview" class="btn primary">Back to Game</button></div>
+    </div>
+  </div>
+
+  <div id="howtoModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="How to Play">
+    <div class="modal-card">
+      <h2 class="modal-title">How to Play</h2>
+      <ul class="howto-list">
+        <li>Open <strong>Settings</strong> (⚙️ or press <strong>S</strong>) to choose theme, music, and images.</li>
+        <li>Pick a grid, then hit <strong>Shuffle & Play</strong>.</li>
+        <li>Move tiles into the empty space (click/tap or use keyboard).</li>
+        <li>Finish fast to beat your <strong>Best</strong> (time & moves).</li>
+        <li>Press <strong>Preview</strong> or <strong>Space</strong> to peek.</li>
+      </ul>
+      <div class="modal-actions"><button id="closeHowto" class="btn primary">Let’s Go!</button></div>
+    </div>
+  </div>
+
+  <div id="winModal" class="modal hidden" role="dialog" aria-modal="true" aria-label="You win!">
+    <div class="modal-card">
+      <h2 class="modal-title win">Glory Glory & Come On You Gunners! 🎉</h2>
+      <p class="win-line">Solved in <strong id="finalTime">00:00</strong> with <strong id="finalMoves">0</strong> moves.</p>
+      <div class="modal-actions"><button id="playAgain" class="btn primary">Play Again</button></div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  /* ---------- Elements ---------- */
+  const boardEl = document.getElementById('board');
+  const shuffleBtn = document.getElementById('shuffle');
+  const previewBtn = document.getElementById('preview');
+  const howtoBtn = document.getElementById('howto');
+
+  // Settings UI
+  const fab = document.getElementById('fab');
+  const settingsModal = document.getElementById('settingsModal');
+  const closeSettings = document.getElementById('closeSettings');
+  const sizeEl = document.getElementById('size');
+  const numbersToggle = document.getElementById('numbers');
+  const soundToggle = document.getElementById('sound');
+  const hapticsToggle = document.getElementById('haptics');
+  const resetBestBtn = document.getElementById('resetBest');
+  const themeMU = document.getElementById('themeMU');
+  const themeARS = document.getElementById('themeARS');
+
+  // Uploads
+  const fileInput = document.getElementById('fileInput');
+  const bgInput = document.getElementById('bgInput');
+
+  // Music controls
+  const musicInput = document.getElementById('musicInput');
+  const musicToggle = document.getElementById('musicToggle');
+  const musicPrev = document.getElementById('musicPrev');
+  const musicNext = document.getElementById('musicNext');
+  const musicVol = document.getElementById('musicVol');
+  const musicLoop = document.getElementById('musicLoop');
+  const tracklistEl = document.getElementById('tracklist');
+
+  // Other modals
+  const previewModal = document.getElementById('previewModal');
+  const previewImage = document.getElementById('previewImage');
+  const closePreview = document.getElementById('closePreview');
+  const howtoModal = document.getElementById('howtoModal');
+  const closeHowto = document.getElementById('closeHowto');
+  const winModal = document.getElementById('winModal');
+  const playAgainBtn = document.getElementById('playAgain');
+
+  // Stats
+  const timeEl = document.getElementById('time');
+  const movesEl = document.getElementById('moves');
+  const bestEl = document.getElementById('best');
+  const nowPlayingEl = document.getElementById('nowPlaying');
+
+  const confettiLayer = document.getElementById('confetti');
+  const toast = document.getElementById('toast');
+
+  // Provide logos for background wall
+  document.documentElement.style.setProperty('--ars-logo-url', 'url("assets/arsenal.png")');
+  document.documentElement.style.setProperty('--mu-logo-url', 'url("assets/manutd.png")');
+
+  /* ---------- Game state ---------- */
+  let imageURL = null; // puzzle tiles image (data URL)
+  let N = 4;
+  let state = [];
+  let tiles = [];
+  let tileSize = 0;
+  let moves = 0;
+  let timerId = null;
+  let startTs = null;
+  let solvedOrder = [];
+
+  /* ---------- Helpers ---------- */
+  const pad = n => (n < 10 ? '0' + n : '' + n);
+  const fmtTime = secs => `${pad(Math.floor(secs / 60))}:${pad(secs % 60)}`;
+  const keyBest = () => `puzzle_best_${N}`;
+  const showToast = (msg) => { toast.textContent = msg; toast.classList.remove('hidden'); setTimeout(()=>toast.classList.add('hidden'), 2200); };
+  const canvasSize = () => Math.max(800, Math.min(1400, (boardEl.clientWidth || 600) * 2));
+
+  // Square canvas generator (cover fit)
+  const makeSquareDataURL = (img, outSize = 1024) => {
+    const c = document.createElement('canvas'), ctx = c.getContext('2d');
+    c.width = c.height = outSize;
+    const sw = img.naturalWidth || img.width || outSize;
+    const sh = img.naturalHeight || img.height || outSize;
+    const scale = Math.max(outSize / sw, outSize / sh);
+    const dw = Math.round(sw * scale), dh = Math.round(sh * scale);
+    const dx = Math.round((outSize - dw) / 2), dy = Math.round((outSize - dh) / 2);
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.clearRect(0,0,outSize,outSize);
+    try { ctx.drawImage(img, dx, dy, dw, dh); } catch(e) {}
+    return c.toDataURL('image/png', 0.92);
+  };
+  const squareFromSrc = (src, size) => new Promise((resolve) => {
+    const img = new Image(); img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(makeSquareDataURL(img, size));
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+
+  /* ---------- Sounds & Haptics ---------- */
+  let audioCtx;
+  const beep = (f=420,d=.06,t='sine',g=.05)=>{ if(!soundToggle.checked) return;
+    try{ audioCtx ||= new (window.AudioContext||window.webkitAudioContext)();
+      const t0=audioCtx.currentTime, o=audioCtx.createOscillator(), a=audioCtx.createGain();
+      o.type=t; o.frequency.value=f; a.gain.value=g; o.connect(a).connect(audioCtx.destination);
+      o.start(t0); o.stop(t0+d);
+      musicDuck();
+    }catch{}
+  };
+  const fanfare = ()=>{ if(!soundToggle.checked) return;
+    [392,523,659,784,988].forEach((f,i)=>setTimeout(()=>beep(f,.1,'triangle',.06),i*120));
+    setTimeout(()=>beep(880,.25,'sawtooth',.045),700);
+  };
+  const vibrate = (ms=15)=>{ if(hapticsToggle.checked && navigator.vibrate) navigator.vibrate(ms); };
+
+  /* ---------- Music Player ---------- */
+  const music = { el:new Audio(), list:[], index:0, playing:false, duckTimer:null };
+  music.el.preload='auto'; music.el.loop=false;
+  music.el.volume=parseFloat(localStorage.getItem('puzzle_music_vol')||'0.5');
+  musicVol.value=music.el.volume.toString();
+
+  const updateNowPlaying = () => { nowPlayingEl.textContent = music.list[music.index]?.name || '—'; };
+  const refreshTracklist = () => {
+    tracklistEl.innerHTML = music.list.length ? music.list.map((t,i)=>`<div>${i===music.index?'▶︎ ':''}${t.name}</div>`).join('') : '<div>— No tracks loaded —</div>';
+  };
+  const musicSet = (i) => { if(!music.list.length) return; music.index=(i+music.list.length)%music.list.length; music.el.src=music.list[music.index].src; updateNowPlaying(); refreshTracklist(); };
+  const musicPlay = async () => { if(!music.list.length){ showToast('Add tracks via “Music files”.'); return; }
+    try{ await music.el.play(); music.playing=true; musicToggle.textContent='Pause ❚❚'; }catch{ showToast('Tap “Play ▷” to start audio.'); } };
+  const musicPause = () => { music.el.pause(); music.playing=false; musicToggle.textContent='Play ▷'; };
+  const musicTogglePlay = () => (music.playing ? musicPause() : musicPlay());
+  const musicNextTrack = () => { if(!music.list.length) return; musicSet(music.index+1); if(music.playing) musicPlay(); };
+  const musicPrevTrack = () => { if(!music.list.length) return; musicSet(music.index-1); if(music.playing) musicPlay(); };
+  music.el.addEventListener('ended', ()=>{ if(musicLoop.checked){ music.el.currentTime=0; musicPlay(); } else { musicNextTrack(); } });
+  musicVol.addEventListener('input', ()=>{ music.el.volume=parseFloat(musicVol.value); localStorage.setItem('puzzle_music_vol', String(music.el.volume)); });
+  musicLoop.addEventListener('change', ()=>{ music.el.loop=musicLoop.checked; });
+  musicInput.addEventListener('change', (e)=>{
+    const files=[...(e.target.files||[])]; if(!files.length) return;
+    files.forEach(f=>{ const url=URL.createObjectURL(f); music.list.push({src:url,name:f.name}); });
+    if(music.list.length===files.length) musicSet(0); else refreshTracklist();
+    showToast(`Added ${files.length} track${files.length>1?'s':''}.`);
+  });
+  musicToggle.addEventListener('click', musicTogglePlay); musicNext.addEventListener('click', musicNextTrack); musicPrev.addEventListener('click', musicPrevTrack);
+  const musicDuck = () => { const base=parseFloat(musicVol.value); if(!music.playing||base===0) return; const target=Math.max(0, base*0.6); music.el.volume=target; clearTimeout(music.duckTimer); music.duckTimer=setTimeout(()=>{ music.el.volume=base; },350); };
+
+  /* ---------- Timer ---------- */
+  const startTimer = ()=>{ stopTimer(); startTs=Date.now(); timerId=setInterval(()=>{ const s=Math.floor((Date.now()-startTs)/1000); timeEl.textContent=fmtTime(s); },250); };
+  const stopTimer = ()=>{ if(timerId) clearInterval(timerId); timerId=null; };
+
+  /* ---------- Board ---------- */
+  const computeTileSize = ()=>{ tileSize = boardEl.clientWidth / N; };
+  const buildSolved = ()=> Array.from({length:N*N},(_,i)=>i);
+  const neighbors = (idx)=>{ const r=Math.floor(idx/N), c=idx%N, L=[]; if(r>0)L.push(idx-N); if(r<N-1)L.push(idx+N); if(c>0)L.push(idx-1); if(c<N-1)L.push(idx+1); return L; };
+  const isSolved = ()=> state.every((v,i)=>v===solvedOrder[i]);
+
+  const createTiles = ()=>{
+    tiles=[]; boardEl.innerHTML='';
+    for(let i=0;i<N*N-1;i++){
+      const el=document.createElement('div'); el.className='tile'; el.dataset.index=i;
+      const badge=document.createElement('div'); badge.className='badge'; badge.textContent=i+1; el.appendChild(badge);
+      boardEl.appendChild(el); tiles.push(el);
+      el.addEventListener('click', ()=>tryMoveByTile(i));
+      el.addEventListener('pointerdown', ()=>tryMoveByTile(i));
+    }
+    updateNumbersVisibility();
+  };
+
+  const draw = ()=>{
+    computeTileSize();
+    if(!tileSize || tileSize<1){ requestAnimationFrame(draw); return; }
+    const bgW=Math.round(tileSize*N);
+    tiles.forEach(el=>{
+      const original=parseInt(el.dataset.index,10);
+      const currentIndex=state.indexOf(original);
+      const r=Math.floor(currentIndex/N), c=currentIndex%N;
+
+      el.style.width=el.style.height=`${tileSize}px`;
+      el.style.transform=`translate(${c*tileSize}px, ${r*tileSize}px)`;
+
+      const tr=Math.floor(original/N), tc=original%N;
+      el.style.backgroundImage=imageURL?`url("${imageURL}")`:'linear-gradient(135deg,#ff004c,#ffcc00,#1a73e8)';
+      el.style.backgroundSize=`${bgW}px ${bgW}px`;
+      el.style.backgroundPosition=`-${Math.round(tc*tileSize)}px -${Math.round(tr*tileSize)}px`;
+      el.style.backgroundRepeat='no-repeat';
+    });
+  };
+
+  const shuffleSolvable=(steps=N*N*50)=>{
+    state=buildSolved(); let blank=state.indexOf(N*N-1), prev=-1;
+    for(let s=0;s<steps;s++){ const ns=neighbors(blank).filter(n=>n!==prev);
+      const pick=ns[Math.floor(Math.random()*ns.length)];
+      [state[blank],state[pick]]=[state[pick],state[blank]]; prev=blank; blank=pick;
+    }
+  };
+
+  const tryMoveByTile=(orig)=>{
+    const tilePos=state.indexOf(orig), blankPos=state.indexOf(N*N-1);
+    if(!neighbors(tilePos).includes(blankPos)) return;
+    [state[tilePos],state[blankPos]]=[state[blankPos],state[tilePos]];
+    moves++; movesEl.textContent=moves; draw(); beep(330+Math.random()*150,.05,'square',.05); vibrate(10);
+    if(isSolved()) setTimeout(onWin,140);
+  };
+
+  const onWin=()=>{
+    stopTimer(); const seconds=Math.floor((Date.now()-startTs)/1000);
+    saveBest(seconds,moves); finalTimeEl.textContent=fmtTime(seconds); finalMovesEl.textContent=String(moves);
+    showModal(winModal); fanfare(); launchConfetti(); vibrate(45); loadBest();
+  };
+
+  const updateNumbersVisibility=()=>{ const show=numbersToggle.checked; tiles.forEach(t=>{ const b=t.querySelector('.badge'); if(b) b.style.display=show?'inline-flex':'none'; }); };
+
+  /* ---------- Modals ---------- */
+  const showModal = (m)=>m.classList.remove('hidden');
+  const hideModal = (m)=>m.classList.add('hidden');
+  const showPreview=(auto=false)=>{ if(imageURL) previewImage.src=imageURL; showModal(previewModal); if(auto) setTimeout(()=>hideModal(previewModal),900); };
+  const launchConfetti=()=>{
+    confettiLayer.innerHTML=''; const n=90;
+    for(let i=0;i<n;i++){ const c=document.createElement('i'); c.className='confetti';
+      c.style.left=Math.random()*100+'%'; c.style.animationDelay=(Math.random()*0.6)+'s';
+      c.style.transform=`translateY(-20vh) rotate(${Math.random()*360}deg)`; confettiLayer.appendChild(c);
+    }
+    setTimeout(()=>confettiLayer.innerHTML='',3200);
+  };
+
+  /* ---------- Persistence ---------- */
+  const loadBest=()=>{ const raw=localStorage.getItem(keyBest()); bestEl.textContent=raw?raw:'—'; };
+  const saveBest=(secs,mvs)=>{ const key=keyBest(), cur=`${fmtTime(secs)} / ${mvs}`, ex=localStorage.getItem(key);
+    if(!ex) return localStorage.setItem(key,cur);
+    const [t,m]=ex.split(' / '), [mm,ss]=t.split(':').map(Number), exS=mm*60+ss, exM=parseInt(m,10);
+    if(secs<exS || (secs===exS && mvs<exM)) localStorage.setItem(key,cur);
+  };
+
+  /* ---------- Theme ---------- */
+  const setTheme=(name)=>{
+    document.body.classList.toggle('theme-mu',name==='mu');
+    document.body.classList.toggle('theme-ars',name==='ars');
+    themeMU.classList.toggle('active',name==='mu');
+    themeARS.classList.toggle('active',name==='ars');
+  };
+
+  /* ---------- Defaults ---------- */
+  const pickDefaultImage=async ()=>{ const s=canvasSize();
+    let out=await squareFromSrc('assets/logo.png',s); if(!out) out=await squareFromSrc('assets/manutd.png',s);
+    if(!out) showToast('No default puzzle image found — using colorful tiles.'); return out; };
+  const trySetDefaultBackground=async ()=>{
+    const paths=['assets/game-bg.jpg','assets/game-bg.png','assets/game-bg.jpeg'];
+    for(const p of paths){
+      const ok=await new Promise(res=>{ const i=new Image(); i.onload=()=>res(true); i.onerror=()=>res(false); i.src=p; });
+      if(ok){ document.documentElement.style.setProperty('--poster-url', `url("${p}")`); return true; }
+    }
+    return false;
+  };
+
+  /* ---------- Start / Restart ---------- */
+  const start=async(newSize=N)=>{
+    N=newSize; solvedOrder=buildSolved(); createTiles();
+    if(!imageURL) imageURL=await pickDefaultImage();
+    shuffleSolvable(); moves=0; movesEl.textContent='0'; timeEl.textContent='00:00';
+    draw(); startTimer(); loadBest();
+  };
+
+  /* ---------- Settings Modal wiring ---------- */
+  const openSettings = ()=> showModal(settingsModal);
+  const closeSettingsFn = ()=> hideModal(settingsModal);
+  fab.addEventListener('click', openSettings);
+  closeSettings.addEventListener('click', closeSettingsFn);
+  window.addEventListener('keydown', (e)=>{ if(e.key.toLowerCase()==='s') openSettings(); if(e.key==='Escape') { hideModal(settingsModal); hideModal(previewModal); hideModal(howtoModal); } });
+
+  // Theme buttons
+  themeMU.addEventListener('click', ()=> setTheme('mu'));
+  themeARS.addEventListener('click', ()=> setTheme('ars'));
+
+  // Gameplay controls
+  sizeEl.addEventListener('change', e => start(parseInt(e.target.value,10)));
+  numbersToggle.addEventListener('change', updateNumbersVisibility);
+  resetBestBtn.addEventListener('click', ()=>{
+    ['puzzle_best_3','puzzle_best_4','puzzle_best_5'].forEach(k=>localStorage.removeItem(k));
+    loadBest(); showToast('Best scores reset.');
+  });
+
+  // File uploads
+  fileInput.addEventListener('change',(e)=>{
+    const file=e.target.files?.[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=()=>{ const tmp=new Image();
+      tmp.onload=()=>{ imageURL=makeSquareDataURL(tmp,canvasSize()); previewImage.src=imageURL; draw(); showToast('Puzzle image updated.'); };
+      tmp.onerror=()=>showToast('Could not read that file. Try PNG/JPG.'); tmp.src=reader.result; };
+    reader.onerror=()=>showToast('Upload failed. Please try again.');
+    reader.readAsDataURL(file);
+  });
+  bgInput.addEventListener('change',(e)=>{
+    const file=e.target.files?.[0]; if(!file) return;
+    const url=URL.createObjectURL(file);
+    document.documentElement.style.setProperty('--poster-url', `url("${url}")`);
+    showToast('Background updated.');
+  });
+
+  // Music events already wired above; add list refresh on load
+  musicInput.addEventListener('change', ()=>{ refreshTracklist(); updateNowPlaying(); });
+
+  /* ---------- Top buttons & other modals ---------- */
+  shuffleBtn.addEventListener('click', ()=> start(N));
+  previewBtn.addEventListener('click', ()=> showPreview(false));
+  howtoBtn.addEventListener('click', ()=> showModal(howtoModal));
+  document.getElementById('closePreview').addEventListener('click', ()=> hideModal(previewModal));
+  document.getElementById('closeHowto').addEventListener('click', ()=> hideModal(howtoModal));
+  playAgainBtn.addEventListener('click', ()=>{ hideModal(winModal); start(N); });
+
+  // Keyboard and resize
+  const handleKey=(e)=>{
+    const key=e.key.toLowerCase(); const b=state.indexOf(N*N-1);
+    const r=Math.floor(b/N), c=b%N; let swap=-1;
+    if(key==='arrowup'||key==='w'){ if(r<N-1) swap=b+N; }
+    else if(key==='arrowdown'||key==='s'){ if(r>0) swap=b-N; }
+    else if(key==='arrowleft'||key==='a'){ if(c<N-1) swap=b+1; }
+    else if(key==='arrowright'||key==='d'){ if(c>0) swap=b-1; }
+    else if(key===' '){ e.preventDefault(); showPreview(true); return; }
+    else return;
+    if(swap!==-1){ [state[b],state[swap]]=[state[swap],state[b]]; moves++; movesEl.textContent=moves; draw(); beep(360+Math.random()*140,.05,'square',.05); if(isSolved()) setTimeout(onWin,140); }
+  };
+  window.addEventListener('keydown', handleKey);
+  window.addEventListener('resize', draw);
+
+  // First-run UX
+  if(!localStorage.getItem('cutePuzzle_seenHowto_settings')){
+    setTimeout(()=>showModal(howtoModal), 350);
+    localStorage.setItem('cutePuzzle_seenHowto_settings','1');
+  }
+
+  // Boot after layout
+  const boot = async ()=>{ await trySetDefaultBackground(); start(4); };
+  if(document.readyState==='complete'){ boot(); } else { window.addEventListener('load', boot); }
+})();
+</script>
+</body>
+</html>
